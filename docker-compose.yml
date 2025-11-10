@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Servidor web con PHP
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lingo_web
+    ports:
+      - "80:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./storage:/var/www/html/storage
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=lingo_db
+      - DB_USERNAME=lingo_user
+      - DB_PASSWORD=lingo_pass
+    depends_on:
+      - db
+    networks:
+      - lingo_network
+    restart: unless-stopped
+
+  # Base de datos MySQL
+  db:
+    image: mysql:8.0
+    container_name: lingo_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: lingo_db
+      MYSQL_USER: lingo_user
+      MYSQL_PASSWORD: lingo_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - lingo_network
+    restart: unless-stopped
+
+  # phpMyAdmin para gestión de BD
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: lingo_phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: lingo_user
+      PMA_PASSWORD: lingo_pass
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - lingo_network
+    restart: unless-stopped
+
+networks:
+  lingo_network:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local
