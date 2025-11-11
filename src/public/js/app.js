@@ -13,6 +13,7 @@ const AppState = {
     timer: null,
     timeRemaining: 60,
     totalTime: 0,
+    gameStartTime: 0, // NUEVO: momento de inicio de la partida
     secretWord: '',
     keyboardState: {}
 };
@@ -206,6 +207,7 @@ async function startNewGame() {
         AppState.currentRow = [];
         AppState.gameActive = true;
         AppState.totalTime = 0;
+        AppState.gameStartTime = Date.now(); // NUEVO: guardar momento de inicio
         AppState.keyboardState = {};
         
         // Inicializar tablero
@@ -318,6 +320,13 @@ function updateCurrentRow() {
 }
 
 /**
+ * Calcula el tiempo total transcurrido desde el inicio de la partida
+ */
+function getTotalElapsedTime() {
+    return Math.floor((Date.now() - AppState.gameStartTime) / 1000);
+}
+
+/**
  * Envía un intento al servidor
  */
 async function submitAttempt() {
@@ -353,8 +362,8 @@ async function submitAttempt() {
         // Actualizar estado del teclado
         updateKeyboardState(word, data.resultado);
         
-        // Incrementar tiempo total
-        AppState.totalTime += timeUsed;
+        // CAMBIO: Calcular tiempo total desde el inicio
+        AppState.totalTime = getTotalElapsedTime();
         
         if (data.ganado) {
             // Victoria
@@ -504,6 +513,9 @@ async function finishGame(won, attempts) {
     stopTimer();
     AppState.gameActive = false;
     
+    // CAMBIO: Asegurar que tenemos el tiempo total actualizado
+    AppState.totalTime = getTotalElapsedTime();
+    
     try {
         const data = await fetchAPI('/game/finish', {
             method: 'POST',
@@ -511,7 +523,7 @@ async function finishGame(won, attempts) {
                 partida_id: AppState.currentPartida,
                 intentos_usados: attempts,
                 ganado: won,
-                tiempo_total: AppState.totalTime
+                tiempo_total: AppState.totalTime // CAMBIO: usar tiempo total
             })
         });
         
@@ -548,9 +560,18 @@ function showResultScreen(won, attempts, score) {
  * Inicializa listeners del juego
  */
 function initGameListeners() {
-    document.getElementById('back-to-menu').addEventListener('click', () => {
-        stopTimer();
-        AppState.gameActive = false;
+    document.getElementById('back-to-menu').addEventListener('click', async () => {
+        // Confirmar si quiere abandonar
+        if (AppState.gameActive || AppState.currentPartida) {
+            const confirmar = confirm('¿Estás seguro de que quieres abandonar la partida? Se registrará como perdida.');
+            if (!confirmar) {
+                return;
+            }
+            
+            // Abandonar partida
+            await abandonGame();
+        }
+        
         showScreen('menu-screen');
     });
     
@@ -574,6 +595,64 @@ function initGameListeners() {
             handleKeyPress(key);
         }
     });
+    
+    // Detectar cuando el usuario sale de la página o cierra la pestaña
+    window.addEventListener('beforeunload', async (e) => {
+        if (AppState.gameActive && AppState.currentPartida) {
+            // Intentar guardar la partida como perdida
+            await abandonGame();
+            
+            // Mostrar mensaje de confirmación (algunos navegadores lo ignoran)
+            e.preventDefault();
+            e.returnValue = 'Tienes una partida en curso. ¿Seguro que quieres salir?';
+        }
+    });
+    
+    // Detectar cuando la pestaña pierde visibilidad (usuario cambia de pestaña)
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && AppState.gameActive) {
+            // Pausar el temporizador cuando el usuario cambia de pestaña
+            stopTimer();
+        } else if (!document.hidden && AppState.gameActive && !AppState.timer) {
+            // Reanudar el temporizador cuando vuelve
+            startTimer();
+        }
+    });
+}
+
+/**
+ * Abandona la partida actual y la registra como perdida
+ */
+async function abandonGame() {
+    if (!AppState.currentPartida) {
+        return;
+    }
+    
+    stopTimer();
+    AppState.gameActive = false;
+    
+    // CAMBIO: usar tiempo total desde el inicio
+    AppState.totalTime = getTotalElapsedTime();
+    
+    try {
+        await fetchAPI('/game/force-finish', {
+            method: 'POST',
+            body: JSON.stringify({
+                partida_id: AppState.currentPartida,
+                intentos_usados: AppState.currentAttempt,
+                tiempo_total: AppState.totalTime // CAMBIO: usar tiempo total
+            })
+        });
+        
+        // Limpiar estado
+        AppState.currentPartida = null;
+        AppState.currentAttempt = 0;
+        AppState.totalTime = 0;
+        AppState.gameStartTime = 0;
+        
+    } catch (error) {
+        console.error('Error al abandonar partida:', error);
+    }
 }
 
 // ============ RANKING ============

@@ -164,6 +164,7 @@ class GameController {
     
     /**
      * Finaliza una partida
+     * CAMBIO: La puntuación ahora se calcula basándose en el tiempo TOTAL de la partida
      */
     public function finish() {
         header('Content-Type: application/json');
@@ -195,11 +196,21 @@ class GameController {
             return;
         }
         
-        // Calcular puntuación (basada en intentos restantes y tiempo)
+        // CAMBIO: Calcular puntuación basada en intentos restantes y TIEMPO TOTAL
         $puntuacion = 0;
         if ($ganado) {
+            // Puntos base por intentos restantes (200 puntos por cada intento no usado)
             $intentosRestantes = 5 - $intentosUsados;
-            $puntuacion = ($intentosRestantes * 200) + max(0, 300 - $tiempoTotal);
+            $puntosIntentos = $intentosRestantes * 200;
+            
+            // Puntos por velocidad (máximo 500 puntos)
+            // Se restan puntos según el tiempo total empleado
+            // Fórmula: max(0, 500 - tiempo_total)
+            // Esto incentiva completar el juego rápidamente
+            $puntosVelocidad = max(0, 500 - $tiempoTotal);
+            
+            // Puntuación total
+            $puntuacion = $puntosIntentos + $puntosVelocidad;
         }
         
         $estado = $ganado ? 'ganada' : 'perdida';
@@ -217,7 +228,57 @@ class GameController {
         ]);
     }
 
+    /**
+     * Fuerza la finalización de una partida (cuando el usuario abandona)
+     * CAMBIO: Ahora usa el tiempo total acumulado
+     */
     public function forceFinish() {
-        
+        header('Content-Type: application/json');
+
+        if (!$this->checkAuth()) {
+            return;
+        }
+    
+        // Obtener datos
+        $data = json_decode(file_get_contents('php://input'), true);
+    
+        if (!isset($data['partida_id'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Falta el ID de partida']);
+            return;
+        }
+    
+        $partidaId = $data['partida_id'];
+    
+        // Verificar que la partida pertenece al usuario
+        $partida = $this->partidaModel->findById($partidaId);
+    
+        if (!$partida || $partida['usuario_id'] != $_SESSION['user_id']) {
+            http_response_code(403);
+            echo json_encode(['error' => 'No tiene permiso para esta partida']);
+            return;
+        }
+    
+        // Verificar que la partida esté en curso
+        if ($partida['estado'] !== 'en_curso') {
+            http_response_code(400);
+            echo json_encode(['error' => 'La partida ya está finalizada']);
+            return;
+        }
+    
+        // Obtener intentos usados y tiempo total
+        $intentosUsados = isset($data['intentos_usados']) ? $data['intentos_usados'] : $partida['intentos_usados'];
+        $tiempoTotal = isset($data['tiempo_total']) ? $data['tiempo_total'] : 0;
+    
+        // Marcar como perdida con puntuación 0    
+        $this->partidaModel->update($partidaId, $intentosUsados, 'perdida', 0, $tiempoTotal);
+
+        // Limpiar sesión de partida
+        unset($_SESSION['partida_id']);
+    
+        echo json_encode([
+            'message' => 'Partida marcada como perdida',
+            'estado' => 'perdida'
+        ]);
     }
 }

@@ -33,6 +33,7 @@ $routes = [
     'GET /api/game/start' => ['Controllers\GameController', 'start'],
     'POST /api/game/validate' => ['Controllers\GameController', 'validateWord'],
     'POST /api/game/finish' => ['Controllers\GameController', 'finish'],
+    'POST /api/game/force-finish' => ['Controllers\GameController', 'forceFinish'],
     
     // Ranking
     'GET /api/ranking' => ['Controllers\RankingController', 'getRanking'],
