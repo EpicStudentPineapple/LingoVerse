@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINGOverse - Tu Juego de Palabras</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Pantalla de Login/Registro -->
+    <div id="auth-screen" class="screen active">
+        <div class="auth-container">
+            <h1 class="logo">LINGO<span>verse</span></h1>
+            <p class="subtitle">Adivina la palabra en 5 intentos</p>
+            
+            <div class="auth-tabs">
+                <button class="tab-btn active" data-tab="login">Iniciar Sesión</button>
+                <button class="tab-btn" data-tab="register">Registrarse</button>
+            </div>
+            
+            <!-- Formulario de Login -->
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-username">Usuario</label>
+                    <input type="text" id="login-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Entrar</button>
+                <div class="error-message" id="login-error"></div>
+            </form>
+            
+            <!-- Formulario de Registro -->
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="register-username">Usuario</label>
+                    <input type="text" id="register-username" name="username" required minlength="3" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Contraseña</label>
+                    <input type="password" id="register-password" name="password" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary">Crear Cuenta</button>
+                <div class="error-message" id="register-error"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Menú Principal -->
+    <div id="menu-screen" class="screen">
+        <div class="menu-container">
+            <h1 class="logo">LINGO<span>verse</span></h1>
+            <div class="user-info">
+                <span>Jugador: <strong id="current-username"></strong></span>
+            </div>
+            <nav class="main-menu">
+                <button class="menu-btn" id="start-game-btn">
+                    <span class="icon">🎮</span>
+                    <span>Nueva Partida</span>
+                </button>
+                <button class="menu-btn" id="show-ranking-btn">
+                    <span class="icon">🏆</span>
+                    <span>Ranking</span>
+                </button>
+                <button class="menu-btn" id="show-config-btn">
+                    <span class="icon">⚙️</span>
+                    <span>Configuración</span>
+                </button>
+                <button class="menu-btn" id="logout-btn">
+                    <span class="icon">🚪</span>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Pantalla de Juego -->
+    <div id="game-screen" class="screen">
+        <div class="game-container">
+            <header class="game-header">
+                <button class="btn-back" id="back-to-menu">← Menú</button>
+                <div class="game-info">
+                    <span id="current-attempt">Intento: 1/5</span>
+                    <span id="timer">⏱️ 60s</span>
+                </div>
+            </header>
+            
+            <div class="game-board">
+                <!-- Las filas se generarán dinámicamente -->
+            </div>
+            
+            <div class="keyboard">
+                <!-- El teclado se generará dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Resultado -->
+    <div id="result-screen" class="screen">
+        <div class="result-container">
+            <div class="result-content">
+                <h2 id="result-title"></h2>
+                <p id="result-message"></p>
+                <div class="result-stats">
+                    <div class="stat">
+                        <span class="stat-label">Puntuación</span>
+                        <span class="stat-value" id="final-score">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Intentos</span>
+                        <span class="stat-value" id="final-attempts">0/5</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Tiempo</span>
+                        <span class="stat-value" id="final-time">0s</span>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <button class="btn btn-primary" id="play-again-btn">Jugar de Nuevo</button>
+                    <button class="btn btn-secondary" id="view-ranking-btn">Ver Ranking</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Ranking -->
+    <div id="ranking-screen" class="screen">
+        <div class="ranking-container">
+            <header class="screen-header">
+                <button class="btn-back" id="back-from-ranking">← Volver</button>
+                <h2>🏆 Ranking de Jugadores</h2>
+            </header>
+            <div class="ranking-list">
+                <!-- El ranking se generará dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Configuración -->
+    <div id="config-screen" class="screen">
+        <div class="config-container">
+            <header class="screen-header">
+                <button class="btn-back" id="back-from-config">← Volver</button>
+                <h2>⚙️ Configuración</h2>
+            </header>
+            <form id="config-form">
+                <div class="config-group">
+                    <label>Tema</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="tema" value="claro" checked>
+                            <span>☀️ Claro</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="tema" value="oscuro">
+                            <span>🌙 Oscuro</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <label>Tamaño de Fuente</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="tamano_fuente" value="pequeño">
+                            <span>Pequeño</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="tamano_fuente" value="normal" checked>
+                            <span>Normal</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="tamano_fuente" value="grande">
+                            <span>Grande</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="sonido_activo" checked>
+                        <span>🔊 Sonidos Activos</span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <div class="success-message" id="config-success"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
